@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from typing import Any
 
@@ -28,12 +29,18 @@ def fetch_repo(slug: str, timeout: float = 10.0) -> dict[str, Any]:
     """
     import requests  # noqa: PLC0415 - 故意延迟导入
 
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "hello-workbuddy",
+    }
+    # 可选：设置 GITHUB_TOKEN 环境变量可提升 API 限额（CI 环境自动生效）
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
     resp = requests.get(
         f"{API}/repos/{slug}",
-        headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "hello-workbuddy",
-        },
+        headers=headers,
         timeout=timeout,
     )
     resp.raise_for_status()
