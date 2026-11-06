@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
+    env:
+      # 自带令牌提升 API 限额，避免共享出口 IP 撞上未认证限流
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: T1 问候
+        run: python main.py
+
+      - name: T2 中文名参数
+        run: python main.py -n 张三
+
+      - name: T3 查询公开仓库
+        run: python main.py -r github/github-mcp-server
+
+      - name: T4 查询本仓库
+        run: python main.py -r Chen-Lixing/hello-workbuddy
+
+      - name: T5 不存在的仓库应返回非零
+        run: |
+          if python main.py -r Chen-Lixing/no-such-repo-xyz; then
+            echo "::error::预期失败但命令成功了" >&2
+            exit 1
+          fi
+          echo "符合预期：返回非零退出码"
